@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio Broadcast</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --accent: #00e5ff;
+    --accent2: #ff3d71;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --success: #00e096;
+    --border: rgba(255,255,255,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(0,229,255,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(255,61,113,0.04) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 480px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .logo h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .logo p {
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    margin-top: 6px;
+    letter-spacing: 2px;
+  }
+
+  /* MODE SELECT */
+  .mode-select {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .mode-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    color: var(--text);
+  }
+
+  .mode-btn:hover {
+    border-color: var(--accent);
+    background: var(--surface2);
+    transform: translateY(-2px);
+  }
+
+  .mode-btn.active {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.06);
+  }
+
+  .mode-btn .icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+  }
+
+  .mode-btn h3 {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .mode-btn p {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+  }
+
+  .card h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--accent);
+  }
+
+  /* ROOM CODE */
+  .room-display {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin: 20px 0;
+  }
+
+  .room-display .label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+  }
+
+  .room-display .code {
+    font-family: 'Space Mono', monospace;
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: 12px;
+    color: var(--accent);
+  }
+
+  /* INPUT */
+  .input-group {
+    margin-bottom: 16px;
+  }
+
+  .input-group label {
+    display: block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .input-group input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 1.2rem;
+    letter-spacing: 6px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+    text-transform: uppercase;
+  }
+
+  .input-group input:focus {
+    border-color: var(--accent);
+  }
+
+  /* BUTTON */
+  .btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #0099bb);
+    color: #000;
+  }
+
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,229,255,0.3); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-danger {
+    background: linear-gradient(135deg, var(--accent2), #cc2255);
+    color: #fff;
+  }
+
+  .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,61,113,0.3); }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1.5px solid var(--border);
+    margin-top: 10px;
+  }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* STATUS */
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin: 16px 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+  }
+
+  .status.info { background: rgba(0,229,255,0.08); color: var(--accent); border: 1px solid rgba(0,229,255,0.2); }
+  .status.success { background: rgba(0,224,150,0.08); color: var(--success); border: 1px solid rgba(0,224,150,0.2); }
+  .status.error { background: rgba(255,61,113,0.08); color: var(--accent2); border: 1px solid rgba(255,61,113,0.2); }
+  .status.warning { background: rgba(255,200,0,0.08); color: #ffc800; border: 1px solid rgba(255,200,0,0.2); }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  .dot.pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  /* LISTENERS */
+  .listeners-count {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-radius: 10px;
+    margin: 12px 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .listeners-count span:last-child {
+    color: var(--success);
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  /* AUDIO VISUALIZER */
+  .visualizer {
+    width: 100%;
+    height: 60px;
+    border-radius: 10px;
+    background: var(--surface2);
+    overflow: hidden;
+    margin: 16px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px;
+  }
+
+  .bar {
+    width: 4px;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: height 0.05s ease;
+    min-height: 4px;
+  }
+
+  /* COPY LINK */
+  .copy-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .copy-row input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    outline: none;
+  }
+
+  .copy-btn {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 1rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .copy-btn:hover { border-color: var(--accent); }
+
+  .hidden { display: none !important; }
+
+  /* VOLUME */
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0;
+  }
+
+  .volume-row label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="logo">
+    <h1>AudioCast</h1>
+    <p>REAL-TIME BROADCAST</p>
+  </div>
+
+  <!-- MODE SELECT -->
+  <div class="mode-select" id="modeSelect">
+    <button class="mode-btn" onclick="selectMode('master')">
+      <div class="icon">🎙️</div>
+      <h3>Master</h3>
+      <p>Broadcast කරනවා</p>
+    </button>
+    <button class="mode-btn" onclick="selectMode('listener')">
+      <div class="icon">🎧</div>
+      <h3>Listener</h3>
+      <p>Audio අහනවා</p>
+    </button>
+  </div>
+
+  <!-- MASTER PANEL -->
+  <div class="card hidden" id="masterPanel">
+    <h2>🎙️ Master — Broadcast</h2>
+
+    <div class="room-display">
+      <div class="label">ROOM CODE</div>
+      <div class="code" id="roomCodeDisplay">----</div>
+    </div>
+
+    <div class="copy-row">
+      <input type="text" id="shareLink" readonly placeholder="link generate වෙනවා...">
+      <button class="copy-btn" onclick="copyLink()">📋 Copy</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="visualizer" id="masterViz">
+      <div style="color:var(--muted);font-size:0.8rem;font-family:monospace">mic start කරන්න</div>
+    </div>
+
+    <div id="masterStatus" class="status info">
+      <div class="dot"></div>
+      <span>Mic start කරන්න...</span>
+    </div>
+
+    <div class="listeners-count">
+      <span>🎧 Listeners connected</span>
+      <span id="listenerCount">0</span>
+    </div>
+
+    <button class="btn btn-primary" id="startBroadcastBtn" onclick="startBroadcast()">🎙️ Broadcast Start</button>
+    <button class="btn btn-danger hidden" id="stopBroadcastBtn" onclick="stopBroadcast()">⏹ Stop Broadcast</button>
+    <button class="btn btn-secondary" onclick="goBack()">← Back</button>
+  </div>
+
+  <!-- LISTENER PANEL -->
+  <div class="card hidden" id="listenerPanel">
+    <h2>🎧 Listener — Join</h2>
+
+    <div class="input-group">
+      <label>ROOM CODE ENTER කරන්න</label>
+      <input type="text" id="roomCodeInput" maxlength="4" placeholder="XXXX" oninput="this.value=this.value.toUpperCase()">
+    </div>
+
+    <button class="btn btn-primary" id="joinBtn" onclick="joinRoom()">🎧 Join Room</button>
+
+    <div id="listenerStatus" class="status info hidden">
+      <div class="dot pulse"></div>
+      <span id="listenerStatusText">Connecting...</span>
+    </div>
+
+    <div id="listenerConnected" class="hidden">
+      <div class="divider"></div>
+      <div class="visualizer" id="listenerViz"></div>
+      <div class="volume-row">
+        <label>VOL</label>
+        <input type="range" id="volumeSlider" min="0" max="100" value="80" oninput="setVolume(this.value)">
+        <label id="volLabel">80%</label>
+      </div>
+      <button class="btn btn-danger" onclick="leaveRoom()">⏹ Leave</button>
+    </div>
+
+    <button class="btn btn-secondary" onclick="goBack()">← Back</button>
+  </div>
+</div>
+
+<audio id="remoteAudio" autoplay playsinline></audio>
+
+<script>
+// ─── PeerJS via CDN ───
+const script = document.createElement('script');
+script.src = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+document.head.appendChild(script);
+
+let peer = null;
+let localStream = null;
+let connections = [];
+let currentMode = null;
+let roomCode = null;
+let masterConn = null;
+let mediaCall = null;
+let analyser = null;
+let vizInterval = null;
+
+// ── Generate 4-char room code ──
+function genCode() {
+  return Math.random().toString(36).substr(2, 4).toUpperCase();
+}
+
+function selectMode(mode) {
+  currentMode = mode;
+  document.getElementById('modeSelect').classList.add('hidden');
+  if (mode === 'master') {
+    const code = genCode();
+    roomCode = code;
+    document.getElementById('roomCodeDisplay').textContent = code;
+    const link = `${location.href.split('?')[0]}?room=${code}`;
+    document.getElementById('shareLink').value = link;
+    document.getElementById('masterPanel').classList.remove('hidden');
+    initMasterPeer(code);
+  } else {
+    document.getElementById('listenerPanel').classList.remove('hidden');
+    // Auto-fill from URL
+    const params = new URLSearchParams(location.search);
+    const r = params.get('room');
+    if (r) document.getElementById('roomCodeInput').value = r.toUpperCase();
+  }
+}
+
+function goBack() {
+  stopBroadcast();
+  leaveRoom();
+  document.getElementById('masterPanel').classList.add('hidden');
+  document.getElementById('listenerPanel').classList.add('hidden');
+  document.getElementById('modeSelect').classList.remove('hidden');
+  currentMode = null;
+  roomCode = null;
+}
+
+// ─── MASTER ───────────────────────────────────────────
+function initMasterPeer(code) {
+  setMasterStatus('info', 'Server connect වෙනවා...');
+  peer = new Peer('audiocast-' + code, {
+    host: '0.peerjs.com', port: 443, secure: true, path: '/'
+  });
+
+  peer.on('open', id => {
+    setMasterStatus('success', 'Ready! Listeners join කරන්න පුළුවන්');
+  });
+
+  peer.on('call', call => {
+    // Shouldn't happen in master, but handle
+  });
+
+  peer.on('connection', conn => {
+    // Data channel for listener count updates
+    conn.on('open', () => {
+      connections.push(conn);
+      updateListenerCount();
+      conn.on('close', () => {
+        connections = connections.filter(c => c !== conn);
+        updateListenerCount();
+      });
+    });
+  });
+
+  peer.on('error', err => {
+    if (err.type === 'unavailable-id') {
+      setMasterStatus('error', 'Room code already in use. Refreshing...');
+      setTimeout(() => { roomCode = genCode(); initMasterPeer(roomCode); }, 1500);
+    } else {
+      setMasterStatus('error', 'Connection error: ' + err.message);
+    }
+  });
+}
+
+async function startBroadcast() {
+  try {
+    setMasterStatus('info', 'Mic permission ගන්නවා...');
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    setMasterStatus('success', '🔴 Live! Broadcasting...');
+    document.getElementById('startBroadcastBtn').classList.add('hidden');
+    document.getElementById('stopBroadcastBtn').classList.remove('hidden');
+    startVisualizer(localStream, 'masterViz');
+
+    // When new listener connects via call, answer with stream
+    peer.on('call', call => {
+      call.answer(localStream);
+      call.on('close', () => updateListenerCount());
+    });
+
+  } catch (e) {
+    setMasterStatus('error', 'Mic access denied. Permission allow කරන්න.');
+  }
+}
+
+function stopBroadcast() {
+  if (localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+  }
+  stopVisualizer();
+  document.getElementById('startBroadcastBtn').classList.remove('hidden');
+  document.getElementById('stopBroadcastBtn').classList.add('hidden');
+  setMasterStatus('info', 'Broadcast stopped');
+  document.getElementById('masterViz').innerHTML = '<div style="color:var(--muted);font-size:0.8rem;font-family:monospace">mic start කරන්න</div>';
+}
+
+function setMasterStatus(type, msg) {
+  const s = document.getElementById('masterStatus');
+  s.className = 'status ' + type;
+  s.innerHTML = `<div class="dot ${type==='success'?'pulse':''}"></div><span>${msg}</span>`;
+}
+
+function updateListenerCount() {
+  document.getElementById('listenerCount').textContent = connections.length;
+}
+
+function copyLink() {
+  const val = document.getElementById('shareLink').value;
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy', 2000);
+  });
+}
+
+// ─── LISTENER ─────────────────────────────────────────
+function joinRoom() {
+  const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+  if (code.length < 4) { alert('4-letter room code enter කරන්න'); return; }
+
+  document.getElementById('joinBtn').disabled = true;
+  showListenerStatus('info', 'Connecting...');
+
+  peer = new Peer(undefined, {
+    host: '0.peerjs.com', port: 443, secure: true, path: '/'
+  });
+
+  peer.on('open', myId => {
+    showListenerStatus('info', 'Master සොයනවා...');
+
+    // Data connection for count
+    const conn = peer.connect('audiocast-' + code);
+    conn.on('open', () => { masterConn = conn; });
+    conn.on('error', () => {});
+
+    // Audio call
+    const call = peer.call('audiocast-' + code, new MediaStream());
+    if (!call) { showListenerStatus('error', 'Room not found'); return; }
+    mediaCall = call;
+
+    call.on('stream', remoteStream => {
+      const audio = document.getElementById('remoteAudio');
+      audio.srcObject = remoteStream;
+      audio.volume = 0.8;
+      showListenerStatus('success', '🎧 Connected! Audio ලැබෙනවා');
+      document.getElementById('listenerConnected').classList.remove('hidden');
+      startVisualizer(remoteStream, 'listenerViz');
+    });
+
+    call.on('error', err => {
+      showListenerStatus('error', 'Connection failed');
+      document.getElementById('joinBtn').disabled = false;
+    });
+
+    call.on('close', () => {
+      showListenerStatus('warning', 'Master disconnected');
+      stopVisualizer();
+    });
+  });
+
+  peer.on('error', err => {
+    if (err.message && err.message.includes('not found')) {
+      showListenerStatus('error', 'Room code නැහැ. Code check කරන්න.');
+    } else {
+      showListenerStatus('error', 'Error: ' + err.message);
+    }
+    document.getElementById('joinBtn').disabled = false;
+  });
+}
+
+function leaveRoom() {
+  if (mediaCall) { mediaCall.close(); mediaCall = null; }
+  if (masterConn) { masterConn.close(); masterConn = null; }
+  if (peer) { peer.destroy(); peer = null; }
+  document.getElementById('remoteAudio').srcObject = null;
+  document.getElementById('listenerConnected').classList.add('hidden');
+  const s = document.getElementById('listenerStatus');
+  s.classList.add('hidden');
+  document.getElementById('joinBtn').disabled = false;
+  stopVisualizer();
+}
+
+function showListenerStatus(type, msg) {
+  const s = document.getElementById('listenerStatus');
+  s.classList.remove('hidden');
+  s.className = 'status ' + type;
+  s.innerHTML = `<div class="dot ${type==='success'||type==='info'?'pulse':''}"></div><span>${msg}</span>`;
+}
+
+function setVolume(v) {
+  document.getElementById('remoteAudio').volume = v / 100;
+  document.getElementById('volLabel').textContent = v + '%';
+}
+
+// ─── VISUALIZER ───────────────────────────────────────
+function startVisualizer(stream, containerId) {
+  stopVisualizer();
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  const bars = [];
+  for (let i = 0; i < 32; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.height = '4px';
+    container.appendChild(bar);
+    bars.push(bar);
+  }
+
+  const ctx = new AudioContext();
+  const source = ctx.createMediaStreamSource(stream);
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 64;
+  source.connect(analyser);
+  const data = new Uint8Array(analyser.frequencyBinCount);
+
+  vizInterval = setInterval(() => {
+    analyser.getByteFrequencyData(data);
+    bars.forEach((bar, i) => {
+      const h = Math.max(4, (data[i] / 255) * 44);
+      bar.style.height = h + 'px';
+      const hue = 180 + (data[i] / 255) * 60;
+      bar.style.background = `hsl(${hue}, 100%, 60%)`;
+    });
+  }, 50);
+}
+
+function stopVisualizer() {
+  if (vizInterval) { clearInterval(vizInterval); vizInterval = null; }
+  if (analyser) { try { analyser.disconnect(); } catch(e){} analyser = null; }
+}
+
+// Auto-open listener if URL has room param
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(location.search);
+  if (params.get('room')) {
+    setTimeout(() => selectMode('listener'), 500);
+  }
+});
+</script>
+</body>
+</html>
