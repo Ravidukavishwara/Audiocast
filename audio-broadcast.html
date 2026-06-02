@@ -549,7 +549,7 @@ function makePeerConfig() {
 
 function initMasterPeer(code) {
   setMasterStatus('info', 'Server connect වෙනවා...');
-  peer = new Peer('audiocast-' + code, makePeerConfig());
+  peer = new Peer('audiocast-' + code, { host: 'peerjs.92k.de', secure: true, port: 443, path: '/', ...makePeerConfig() });
 
   peer.on('open', id => {
     setMasterStatus('success', 'Ready! Listeners join කරන්න පුළුවන්');
@@ -640,7 +640,7 @@ function joinRoom() {
   document.getElementById('joinBtn').disabled = true;
   showListenerStatus('info', 'Connecting...');
 
-  peer = new Peer(undefined, makePeerConfig());
+  peer = new Peer(undefined, { host: 'peerjs.92k.de', secure: true, port: 443, path: '/', ...makePeerConfig() });
 
   peer.on('open', myId => {
     showListenerStatus('info', 'Master සොයනවා...');
